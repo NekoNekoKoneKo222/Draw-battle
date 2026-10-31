@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#151b2c">
+  <meta name="description" content="自分の絵がモンスターカードに！ 描いて、AI評価でカード化して、コレクション＆対戦しよう。">
+  <title>DRAWMON | 描いて、育てて、バトル！</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a href="#create" class="brand" aria-label="DRAWMON ホーム"><span class="brand-mark">D<span>✦</span></span><span class="brand-name">DRAW<span>MON</span><small>DRAW IT. SUMMON IT.</small></span></a>
+      <nav class="main-nav" aria-label="メインメニュー">
+        <button class="nav-item active" data-page="create"><span class="nav-emoji">✏️</span> お絵描き</button>
+        <button class="nav-item" data-page="collection"><span class="nav-emoji">🗂️</span> コレクション <span class="nav-count" id="nav-count">0</span></button>
+        <button class="nav-item" data-page="battle"><span class="nav-emoji">⚔️</span> バトル</button>
+        <button class="nav-item" data-page="online"><span class="nav-emoji">🌐</span> オンライン</button>
+        <button class="nav-item" data-page="gallery"><span class="nav-emoji">🖼️</span> 公開カード</button>
+      </nav>
+      <div class="profile-pill"><span class="avatar">★</span> トレーナー <b id="win-count">0 WIN</b></div>
+    </header>
+
+    <main>
+      <section class="page active" id="page-create">
+        <div class="page-heading">
+          <div><div class="eyebrow"><span class="star-burst">✦</span> YOUR IMAGINATION IS POWER</div><h1>描いた絵が、<span class="gradient-text">相棒になる。</span></h1><p>自由にモンスターを描こう。画像認識AIと絵の特徴分析で、世界にひとつのカードが誕生！</p></div>
+          <div class="tip-bubble">💡 色や形を工夫して<br>レアカードを目指そう！</div>
+        </div>
+        <div class="create-layout">
+          <div class="studio-panel">
+            <div class="panel-topline"><span class="section-index">01</span><div><h2>お絵描きスタジオ</h2><p>君だけのモンスターを生み出そう</p></div><span class="live-badge"><i></i> CANVAS READY</span></div>
+            <label class="before-name">① まずモンスターの名前を決めよう<input id="monster-name" maxlength="24" placeholder="例：ファイアドラゴン" autocomplete="off"></label>
+            <div class="drawing-shell"><div class="drawing-caption">FREE DRAWING AREA <span>640 × 440</span></div><canvas id="draw-canvas" width="640" height="440" aria-label="モンスターのお絵描きキャンバス"></canvas><div class="canvas-hint" id="canvas-hint"><span>✎</span> ここに絵を描いてみよう！<small>マウス・タッチ操作に対応</small></div><div class="drawing-corner">✦ DRAWMON STUDIO</div></div>
+            <div class="tool-area"><div class="tool-line"><div class="tool-segment" role="group" aria-label="描画ツール"><button id="pen-tool" class="tool-button selected" title="ペン">✎ <span>ペン</span></button><button id="eraser-tool" class="tool-button" title="消しゴム">◫ <span>消す</span></button></div><div class="size-control"><label for="brush-size">太さ <strong id="brush-label">8px</strong></label><input id="brush-size" type="range" min="2" max="36" value="8"></div><button id="undo-btn" class="small-button" title="一つ戻す">↶ 戻す</button><button id="clear-btn" class="small-button danger-text" title="全部消す">🗑 全消去</button></div><div class="palette-row" id="palette" aria-label="ペンの色"></div></div>
+            <button id="analyze-btn" class="primary-button big"><span>✦</span> AIで評価してカード化 <span class="button-arrow">↗</span></button><p class="footnote">※画像認識AIは初回のみモデルを読み込みます。利用できない場合は色・形の分析モードで生成します。</p>
+          </div>
+          <aside class="preview-column"><div class="panel-topline preview-title"><span class="section-index violet">02</span><div><h2>カードプレビュー</h2><p>完成したらここに表示！</p></div></div><div id="preview-placeholder" class="preview-empty"><div class="empty-orb">?</div><div class="floating-star s1">✦</div><div class="floating-star s2">✧</div><h3>まだモンスターがいないよ</h3><p>左のキャンバスに絵を描いて<br>AIで評価してみよう！</p><div class="empty-chip">NO CARD YET</div></div><div id="preview-result" class="hidden"></div><div class="guide-card"><span class="guide-icon">✦</span><div><b>HOW TO PLAY</b><ol><li>好きな絵を描く</li><li>AIが特徴を評価してカード化</li><li>図鑑に保存してバトル！</li></ol></div></div></aside>
+        </div>
+      </section>
+
+      <section class="page" id="page-collection">
+        <div class="page-heading"><div><div class="eyebrow">YOUR ONE-OF-A-KIND CREATURES</div><h1>マイ <span class="gradient-text">コレクション</span></h1><p>生み出したモンスターはここに保存されるよ。バトルに連れていこう！</p></div><button class="outline-button" data-jump="create">＋ 新しいカードを作る</button></div>
+        <div class="collection-toolbar"><div><b id="collection-count">0</b> 枚のカード <span class="dim">/ ローカル＋クラウド保存</span></div><div class="cloud-actions"><button id="cloud-save" class="small-button">☁ セーブ</button><button id="cloud-load" class="small-button">↧ ロード</button></div><label>並び順 <select id="sort-cards"><option value="newest">新しい順</option><option value="score">評価スコア順</option><option value="rarity">レア度順</option></select></label></div>
+        <p class="cloud-notice" id="cloud-status">クラウド保存にはChatGPTへのログインが必要です。初回は「セーブ」を押してください。</p>
+        <div id="collection-grid" class="card-grid"></div><div id="collection-empty" class="state-empty"><div>🎨</div><h2>コレクションはまだ空っぽ！</h2><p>まずはオリジナルモンスターを描いてみよう。</p><button class="primary-button" data-jump="create">お絵描きを始める →</button></div>
+      </section>
+
+      <section class="page" id="page-battle">
+        <div class="page-heading"><div><div class="eyebrow">TURN-BASED MONSTER SHOWDOWN</div><h1>カード <span class="gradient-text">バトルアリーナ</span></h1><p>自分で描いたモンスターでCPUと対戦！ 属性相性と3つの技が勝利のカギ。</p></div><div class="win-badge">🏆 <strong id="battle-wins">0</strong> 勝</div></div>
+        <div id="battle-setup" class="battle-setup"><div class="battle-setup-head"><span class="section-index">01</span><div><h2>出場するモンスターを選ぼう</h2><p>カードを選んだら「バトル開始」を押してね</p></div></div><div id="battle-choices" class="battle-choices"></div><div class="battle-actions"><p id="selected-info">カードを選択してください</p><button id="start-battle" class="primary-button" disabled>⚔ バトル開始！</button></div></div>
+        <div id="battle-field" class="hidden"><div class="arena-stage"><div class="arena-glow"></div><div class="battle-side foe-side"><div id="enemy-monster" class="fighter-display"></div><div id="enemy-status" class="fighter-status"></div></div><div class="versus-sign">VS</div><div class="battle-side player-side"><div id="player-monster" class="fighter-display"></div><div id="player-status" class="fighter-status"></div></div></div><div class="battle-console"><div class="console-header"><span>⚔ BATTLE LOG</span><button id="leave-battle" class="small-button">↶ 戻る</button></div><div id="battle-log" class="battle-log" aria-live="polite"></div><div class="skill-grid" id="skill-buttons"></div><div id="battle-end" class="hidden"></div></div></div>
+        <div class="type-guide"><b>属性相性のヒント</b>　🔥 炎 ＞ 🌿 森 ＞ 💧 水 ＞ 🔥 炎　　⚡ 雷 ＞ 💧 水　　🌙 闇 ⇄ ✨ 光</div>
+      </section>
+
+      <section class="page" id="page-online">
+        <div class="page-heading"><div><div class="eyebrow">PLAY WITH A FRIEND</div><h1>オンライン <span class="gradient-text">対戦</span></h1><p>同じ部屋コードを入力した友達と対戦！ カードを選んで部屋を作ろう。</p></div></div>
+        <div id="online-lobby" class="online-lobby"><div class="online-box"><h2>① 対戦カードを選ぶ</h2><p>オンライン対戦にはクラウド保存済みのカードが必要です。</p><div id="online-card-picker" class="battle-choices"></div></div><div class="online-box"><h2>② 部屋に参加する</h2><button id="create-room" class="primary-button">＋ 部屋を作成</button><div class="join-divider">または、友達の部屋に参加</div><div class="join-row"><input id="join-code" maxlength="6" placeholder="6文字の部屋コード" aria-label="部屋コード"><button id="join-room" class="outline-button">参加する →</button></div></div></div>
+        <div id="online-room" class="hidden"><div class="room-header"><div><span class="eyebrow">ROOM CODE</span><h2 id="room-code">------</h2></div><button id="copy-room" class="outline-button">コードをコピー</button><button id="quit-room" class="small-button">ロビーに戻る</button></div><div id="room-waiting" class="room-waiting"><div class="waiting-spinner">✦</div><h2>対戦相手を待っています…</h2><p>友達に上の部屋コードを教えてね。相手が参加すると自動で始まります。</p></div><div id="online-match" class="hidden"><div class="online-fighters"><div id="online-enemy" class="online-fighter"></div><span class="versus-sign">VS</span><div id="online-player" class="online-fighter"></div></div><div class="battle-console"><div class="console-header">🌐 ONLINE BATTLE <span id="online-turn"></span></div><div class="battle-log" id="online-logs"></div><div id="online-skills" class="skill-grid"></div></div></div></div>
+      </section>
+
+      <section class="page" id="page-gallery">
+        <div class="page-heading"><div><div class="eyebrow">COMMUNITY MONSTER GALLERY</div><h1>みんなの <span class="gradient-text">公開カード</span></h1><p>みんなのオリジナルカードを見てみよう。自分のカードはコレクション画面から公開できるよ。</p></div><button id="refresh-gallery" class="outline-button">↻ 更新する</button></div>
+        <div id="gallery-grid" class="card-grid"></div><div id="gallery-empty" class="state-empty"><div>🖼️</div><h2>まだ公開カードがありません</h2><p>最初の公開者になってみよう！</p></div>
+      </section>
+    </main>
+    <footer><span>✦ DRAWMON</span>　描くことから始まる、君だけの冒険。<span>ART × AI × BATTLE</span></footer>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="./app.js" defer></script>
+</body>
+</html>
