@@ -5,6 +5,7 @@
   const ctx = canvas.getContext('2d', {willReadFrequently:true});
   const COLORS = ['#292c45','#ffffff','#f46e83','#fbb75c','#f9d75e','#85d87d','#4dcbbb','#6da5f2','#b78bff','#ec8bd1','#9b6e54','#989ba8'];
   const ELEMENTS = {
+    normal:{name:'ノーマル',icon:'🐾',color:'#c5b9a6',strong:[]},
     fire:{name:'炎',icon:'🔥',color:'#f58168',strong:['forest']},
     water:{name:'水',icon:'💧',color:'#72a6ff',strong:['fire']},
     forest:{name:'森',icon:'🌿',color:'#80c777',strong:['water']},
@@ -156,6 +157,18 @@
     const value=name.normalize('NFKC').toLowerCase();
     return {element:NAME_ELEMENTS.find(x=>x.pattern.test(value))?.id||null,creature:AI_CREATURES.find(x=>x.pattern.test(value))||null};
   }
+  function chooseCardElement(hints,features,judgment){
+    // A six-way elemental classifier always picks an element, even for a plain cat.
+    // A named animal without an elemental keyword should be normal by default.
+    if(hints.element)return hints.element;
+    if(hints.creature)return 'normal';
+    if(!judgment)return 'normal';
+    const bestCreature=judgment.creatureScores[0]?.score||0;
+    const bestElement=judgment.elementScores[0]?.score||0;
+    if(bestCreature>=bestElement*.9)return 'normal';
+    // Require color evidence AND the AI's agreement before granting an elemental type.
+    return features.saturation>=.24&&judgment.visualElement===features.element?features.element:'normal';
+  }
   async function getRecognition(onProgress){
     if(!modelPromise)modelPromise=(async()=>{
       const {pipeline,env}=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1');
@@ -184,6 +197,7 @@
   function cardImage(){const c=document.createElement('canvas');c.width=240;c.height=168;const p=c.getContext('2d');p.fillStyle='#fdfbff';p.fillRect(0,0,c.width,c.height);p.drawImage(canvas,0,0,c.width,c.height);return c.toDataURL('image/webp',.79);}
   function generatedMoves(element,features,creature){
     const variants={
+      normal:[['たいあたり','ワイルドラッシュ'],['ひっかく','なかまのちから']],
       fire:[['火炎の爪','フレイムブレイク'],['紅蓮の牙','メテオフレア']],
       water:[['水流の刃','タイダルウェーブ'],['アクアショット','深海の渦']],
       forest:[['リーフカッター','大樹の怒り'],['蔦のムチ','森羅の嵐']],
@@ -208,9 +222,8 @@
     }catch(e){console.warn('画像・テキスト照合AIを利用できません。代替評価に切り替えます。',e);}
     const rand=n=>((f.hash>>>((n%4)*8))&255)/255;
     const hints=judgment?.hints||nameThemes(chosenName);
-    const dominant=judgment?.elementScores[0];
     const nameElement=hints.element;
-    const element=judgment?AI_ELEMENTS.map(x=>({id:x.id,score:(judgment.elementScores.find(y=>y.id===x.id)?.score||0)/Math.max(dominant.score,1e-8)*.65+(x.id===f.element?0.20:0)+(x.id===nameElement?0.15:0)})).sort((a,b)=>b.score-a.score)[0].id:nameElement||f.element;
+    const element=chooseCardElement(hints,f,judgment);
     const shapeScore=38+Math.min(25,f.coverage*160)+Math.min(12,f.variation*.28)+f.symmetry*9+Math.min(8,strokes*.7)+Math.min(6,f.edges/1700);
     const matchBonus=judgment?.alignment!=null?(judgment.alignment-.55)*22:0;
     const visualScore=clamp(Math.round(shapeScore+matchBonus+(judgment?3:0)),38,98);
@@ -227,8 +240,9 @@
   function renderPreview(){
     $('preview-placeholder').classList.add('hidden');$('preview-result').classList.remove('hidden');
     const nameDescription=[draft.nameElement?ELEMENTS[draft.nameElement].name+'属性':'',draft.nameCreature].filter(Boolean).join('・');
-    const status=draft.aiUsed?`絵のAI判定：<strong>${escapeHtml(draft.visualCreature)}</strong> ／ ${ELEMENTS[draft.visualElement].name}のイメージ。<br>名前「${escapeHtml(draft.name)}」から読み取ったテーマ：<strong>${escapeHtml(nameDescription||'オリジナル名')}</strong>。${draft.nameMatch==null?'名前に明確なテーマがないため、一致度の数値は付けていません。':`<br>名前と絵の一致度：<strong>${draft.nameMatch}/100</strong>（AIが比べた候補間の相対的な目安）`}`:'画像・文章を照合するAIが利用できなかったため、名前のキーワードと絵の色・形・密度・対称性から簡易評価しました。';
-    $('preview-result').innerHTML=`<div class="generation-label"><span>✦ NEW CREATURE GENERATED</span><div class="preview-scoring">SCORE <strong>${draft.score}</strong>/100</div></div>${cardTemplate(draft,true)}<div class="generation-info"><b>🧠 名前 × イラスト AI評価レポート</b><p>${status}</p><p>${ELEMENTS[draft.element].icon} ${ELEMENTS[draft.element].name}属性・${RARITY[draft.rarity].name}判定。名前や絵をもとに技も自動生成されました。</p></div><button id="save-card" class="primary-button save-button">📚 コレクションに保存する</button>`;
+    const typeReason=draft.element==='normal'?'特殊な属性の根拠がないため、ノーマルタイプになりました。':'名前の属性と絵の特徴を使ってタイプを決めました。';
+    const status=draft.aiUsed?`絵のAI判定：<strong>${escapeHtml(draft.visualCreature)}</strong>のイメージ。<br>名前「${escapeHtml(draft.name)}」から読み取ったテーマ：<strong>${escapeHtml(nameDescription||'オリジナル名')}</strong>。${draft.nameMatch==null?'名前に明確なテーマがないため、一致度の数値は付けていません。':`<br>名前と絵の一致度：<strong>${draft.nameMatch}/100</strong>（AIが比べた候補間の相対的な目安）`}<br>${typeReason}`:`画像・文章を照合するAIが利用できなかったため、名前のキーワードと絵の色・形・密度・対称性から簡易評価しました。${typeReason}`;
+    $('preview-result').innerHTML=`<div class="generation-label"><span>✦ NEW CREATURE GENERATED</span><div class="preview-scoring">SCORE <strong>${draft.score}</strong>/100</div></div>${cardTemplate(draft,true)}<div class="generation-info"><b>🧠 名前 × イラスト AI評価レポート</b><p>${status}</p><p>${ELEMENTS[draft.element].icon} ${ELEMENTS[draft.element].name}タイプ・${RARITY[draft.rarity].name}判定。名前や絵をもとに技も自動生成されました。</p></div><button id="save-card" class="primary-button save-button">📚 コレクションに保存する</button>`;
     $('save-card').addEventListener('click',saveDraft);
   }
   function saveDraft(){

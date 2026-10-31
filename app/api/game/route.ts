@@ -14,7 +14,7 @@ const integer=(value:unknown,min:number,max:number)=>Math.max(min,Math.min(max,M
 const name=(value:unknown)=>typeof value==='string'?[...value.trim()].slice(0,24).join(''):'';
 const validId=(value:unknown)=>typeof value==='string'&&/^[a-zA-Z0-9_-]{8,64}$/.test(value);
 const urlFor=(id:string)=>`/api/game?op=art&id=${encodeURIComponent(id)}`;
-const elementName=(s:string)=>({fire:'炎',water:'水',forest:'森',thunder:'雷',dark:'闇',light:'光'} as Record<string,string>)[s]||'闇';
+const elementName=(s:string)=>({normal:'ノーマル',fire:'炎',water:'水',forest:'森',thunder:'雷',dark:'闇',light:'光'} as Record<string,string>)[s]||'ノーマル';
 const now=()=>Date.now();
 const readCard=async(id:string)=>validId(id)?(await database().prepare('SELECT * FROM drawmon_cards WHERE id=?').bind(id).first<Card>()):null;
 const readRoom=async(code:string)=>/^[A-Z0-9]{6}$/.test(code)?(await database().prepare('SELECT * FROM drawmon_rooms WHERE code=?').bind(code).first<Room>()):null;
@@ -64,7 +64,7 @@ async function save(input:Record<string,unknown>,userId:string){
   const c=(input.card||{}) as Record<string,unknown>;
   if(!validId(c.id))return fail('カードIDが正しくありません');
   const id=c.id as string,display=name(c.name),element=String(c.element||''),rarity=String(c.rarity||'');
-  if(!display||!['fire','water','forest','thunder','dark','light'].includes(element)||!['common','rare','epic','legend'].includes(rarity))return fail('カード情報が正しくありません');
+  if(!display||!['normal','fire','water','forest','thunder','dark','light'].includes(element)||!['common','rare','epic','legend'].includes(rarity))return fail('カード情報が正しくありません');
   const old=await readCard(id);
   if(old&&old.owner_id!==userId)return fail('他人のカードは上書きできません',403);
   if(!old){const count=await database().prepare('SELECT COUNT(*) AS n FROM drawmon_cards WHERE owner_id=?').bind(userId).first<{n:number}>();if((count?.n||0)>=100)return fail('保存上限は100枚です');}
