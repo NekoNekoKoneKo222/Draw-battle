@@ -130,7 +130,7 @@ function action(state:State,side:'p1'|'p2',skill:number){
     const factor=strong[actor.element]===other.element?1.35:strong[other.element]===actor.element?0.78:1;
     const base=Math.max(5,(actor.atk*.42+8)*move.power*factor-other.def*.115);
     const damage=Math.max(5,Math.round(base*(other.guard?.48:1)));other.hp=Math.max(0,other.hp-damage);other.guard=false;
-    if(skill===1)actor.cd=3;
+    if(skill===1)actor.cd=2;
     state.logs.push(`${actor.name} の「${move.name}」！ ${damage}ダメージ！${factor>1?' 効果ばつぐん！':''}`);
   }
   if(other.hp<=0){state.winner=side;state.logs.push(`${actor.name} の勝利！`);}else state.turn=side==='p1'?'p2':'p1';

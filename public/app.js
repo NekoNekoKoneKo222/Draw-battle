@@ -269,7 +269,7 @@
   function perform(actor,defender,skill){
     const names=skillNames(actor);if(skill===2){actor.guard=true;const heal=Math.min(actor.hp-actor.currentHp,Math.round(actor.hp*.09));actor.currentHp+=heal;log(`${actor.name} は身を守った！ HPを ${heal} 回復。`);return;}
     const r=damage(actor,defender,skill===1?1.48:1);
-    if(skill===1)actor.cd=3;
+    if(skill===1)actor.cd=2;
     log(`${actor.name} の「${names[skill]}」！ ${r.final} ダメージ！${r.type>1?' 効果ばつぐん！':r.type<1?' 効果はいまひとつ…':''}`);
   }
   function finishBattle(won){match.ended=true;busy=false;if(won){wins++;localStorage.setItem(WINS_KEY,JSON.stringify(wins));updateCounters();}renderMatch();$('battle-end').innerHTML=`<div class="battle-result"><h2>${won?'🏆 勝利！':'💫 敗北…'}</h2><p>${won?'相棒との絆で勝ち取った勝利！':'技の使い方を変えて、もう一度挑戦しよう！'}</p><button id="battle-again" class="primary-button">↻ 別の相手と戦う</button></div>`;$('battle-end').classList.remove('hidden');$('battle-again').addEventListener('click',()=>{match=null;renderBattleSetup()});}
