@@ -25,7 +25,7 @@
     <main>
       <section class="page active" id="page-create">
         <div class="page-heading">
-          <div><div class="eyebrow"><span class="star-burst">✦</span> YOUR IMAGINATION IS POWER</div><h1>描いた絵が、<span class="gradient-text">相棒になる。</span></h1><p>自由にモンスターを描こう。画像認識AIと絵の特徴分析で、世界にひとつのカードが誕生！</p></div>
+          <div><div class="eyebrow"><span class="star-burst">✦</span> YOUR IMAGINATION IS POWER</div><h1>描いた絵が、<span class="gradient-text">相棒になる。</span></h1><p>自由にモンスターを描こう。AIが名前とイラストを見比べて、世界にひとつのカードを評価！</p></div>
           <div class="tip-bubble">💡 色や形を工夫して<br>レアカードを目指そう！</div>
         </div>
         <div class="create-layout">
@@ -34,9 +34,9 @@
             <label class="before-name">① まずモンスターの名前を決めよう<input id="monster-name" maxlength="24" placeholder="例：ファイアドラゴン" autocomplete="off"></label>
             <div class="drawing-shell"><div class="drawing-caption">FREE DRAWING AREA <span>640 × 440</span></div><canvas id="draw-canvas" width="640" height="440" aria-label="モンスターのお絵描きキャンバス"></canvas><div class="canvas-hint" id="canvas-hint"><span>✎</span> ここに絵を描いてみよう！<small>マウス・タッチ操作に対応</small></div><div class="drawing-corner">✦ DRAWMON STUDIO</div></div>
             <div class="tool-area"><div class="tool-line"><div class="tool-segment" role="group" aria-label="描画ツール"><button id="pen-tool" class="tool-button selected" title="ペン">✎ <span>ペン</span></button><button id="eraser-tool" class="tool-button" title="消しゴム">◫ <span>消す</span></button></div><div class="size-control"><label for="brush-size">太さ <strong id="brush-label">8px</strong></label><input id="brush-size" type="range" min="2" max="36" value="8"></div><button id="undo-btn" class="small-button" title="一つ戻す">↶ 戻す</button><button id="clear-btn" class="small-button danger-text" title="全部消す">🗑 全消去</button></div><div class="palette-row" id="palette" aria-label="ペンの色"></div></div>
-            <button id="analyze-btn" class="primary-button big"><span>✦</span> AIで評価してカード化 <span class="button-arrow">↗</span></button><p class="footnote">※画像認識AIは初回のみモデルを読み込みます。利用できない場合は色・形の分析モードで生成します。</p>
+            <button id="analyze-btn" class="primary-button big"><span>✦</span> AIで評価してカード化 <span class="button-arrow">↗</span></button><p class="footnote">※名前と絵を照合するAI（CLIP）はブラウザ内で動きます。初回は約150MBのモデルをダウンロードするため、Wi-Fi推奨。APIの利用回数制限はありません。利用できない場合は簡易評価します。</p>
           </div>
-          <aside class="preview-column"><div class="panel-topline preview-title"><span class="section-index violet">02</span><div><h2>カードプレビュー</h2><p>完成したらここに表示！</p></div></div><div id="preview-placeholder" class="preview-empty"><div class="empty-orb">?</div><div class="floating-star s1">✦</div><div class="floating-star s2">✧</div><h3>まだモンスターがいないよ</h3><p>左のキャンバスに絵を描いて<br>AIで評価してみよう！</p><div class="empty-chip">NO CARD YET</div></div><div id="preview-result" class="hidden"></div><div class="guide-card"><span class="guide-icon">✦</span><div><b>HOW TO PLAY</b><ol><li>好きな絵を描く</li><li>AIが特徴を評価してカード化</li><li>図鑑に保存してバトル！</li></ol></div></div></aside>
+          <aside class="preview-column"><div class="panel-topline preview-title"><span class="section-index violet">02</span><div><h2>カードプレビュー</h2><p>完成したらここに表示！</p></div></div><div id="preview-placeholder" class="preview-empty"><div class="empty-orb">?</div><div class="floating-star s1">✦</div><div class="floating-star s2">✧</div><h3>まだモンスターがいないよ</h3><p>左のキャンバスに絵を描いて<br>AIで評価してみよう！</p><div class="empty-chip">NO CARD YET</div></div><div id="preview-result" class="hidden"></div><div class="guide-card"><span class="guide-icon">✦</span><div><b>HOW TO PLAY</b><ol><li>名前を決めて絵を描く</li><li>AIが名前と絵を見比べてカード化</li><li>図鑑に保存してバトル！</li></ol></div></div></aside>
         </div>
       </section>
 

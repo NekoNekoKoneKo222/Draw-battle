@@ -24,6 +24,40 @@
   let brush = 8, color = COLORS[0], drawing = false, erased = false, strokes = 0;
   let undoStack = [], draft = null, selectedId = null, match = null, busy = false;
   let toastTimer = null, modelPromise = null;
+  const AI_ELEMENTS = [
+    {id:'fire',prompt:'a hand drawn fantasy fire monster with flames'},
+    {id:'water',prompt:'a hand drawn fantasy water creature from the ocean'},
+    {id:'forest',prompt:'a hand drawn fantasy nature monster with leaves and plants'},
+    {id:'thunder',prompt:'a hand drawn fantasy electric monster surrounded by lightning'},
+    {id:'dark',prompt:'a hand drawn fantasy shadow monster in the darkness'},
+    {id:'light',prompt:'a hand drawn fantasy celestial monster shining with light'}
+  ];
+  const AI_CREATURES = [
+    {id:'dragon',name:'ドラゴン',prompt:'a hand drawn dragon creature',pattern:/ドラゴン|龍|竜|りゅう|dragon|drake/},
+    {id:'cat',name:'ネコ',prompt:'a hand drawn cat creature',pattern:/ネコ|ねこ|猫|cat|kitty/},
+    {id:'dog',name:'イヌ',prompt:'a hand drawn dog creature',pattern:/イヌ|いぬ|犬|dog|puppy/},
+    {id:'wolf',name:'オオカミ',prompt:'a hand drawn wolf creature',pattern:/オオカミ|おおかみ|狼|wolf/},
+    {id:'fox',name:'キツネ',prompt:'a hand drawn fox creature',pattern:/キツネ|きつね|狐|fox/},
+    {id:'bird',name:'トリ',prompt:'a hand drawn bird creature with wings',pattern:/トリ|とり|鳥|ワシ|フクロウ|bird|eagle|owl/},
+    {id:'fish',name:'サカナ',prompt:'a hand drawn fish creature',pattern:/サカナ|さかな|魚|サメ|fish|shark/},
+    {id:'snake',name:'ヘビ',prompt:'a hand drawn snake creature',pattern:/ヘビ|へび|蛇|snake|serpent/},
+    {id:'rabbit',name:'ウサギ',prompt:'a hand drawn rabbit creature',pattern:/ウサギ|うさぎ|兎|rabbit|bunny/},
+    {id:'bear',name:'クマ',prompt:'a hand drawn bear creature',pattern:/クマ|くま|熊|bear/},
+    {id:'butterfly',name:'チョウ',prompt:'a hand drawn butterfly creature',pattern:/チョウ|蝶|ちょう|butterfly/},
+    {id:'turtle',name:'カメ',prompt:'a hand drawn turtle creature',pattern:/カメ|かめ|亀|turtle/},
+    {id:'frog',name:'カエル',prompt:'a hand drawn frog creature',pattern:/カエル|かえる|蛙|frog/},
+    {id:'robot',name:'ロボット',prompt:'a hand drawn robot monster made of metal',pattern:/ロボ|メカ|機械|robot|mecha/},
+    {id:'flower',name:'花',prompt:'a hand drawn flower creature',pattern:/花|フラワー|flower/},
+    {id:'slime',name:'スライム',prompt:'a hand drawn round slime monster',pattern:/スライム|slime/}
+  ];
+  const NAME_ELEMENTS = [
+    {id:'fire',pattern:/炎|火|焔|灼熱|燃|ファイア|フレイム|マグマ|fire|flame|lava/},
+    {id:'water',pattern:/水|海|波|氷|雪|アクア|ウォーター|アイス|water|ocean|ice/},
+    {id:'forest',pattern:/森|木|葉|草|花|緑|リーフ|フォレスト|leaf|forest|nature/},
+    {id:'thunder',pattern:/雷|電|稲妻|サンダー|スパーク|thunder|electric|lightning/},
+    {id:'dark',pattern:/闇|影|夜|黒|ダーク|シャドウ|dark|shadow|night/},
+    {id:'light',pattern:/光|星|太陽|聖|輝|ライト|ホーリー|light|star|holy|sun/}
+  ];
   let onlineSelectedId = null, onlineCode = '', onlineSide = '', onlineVersion = -1, onlineBusy = false, onlinePolling = null;
   const emojis = ['🐱','🐺','🐉','🐙','🦋','🦊','🐦','🐸','🦄','🐻','🦇'];
 
@@ -118,22 +152,37 @@
     const scale=Math.min(210/canvas.width,210/canvas.height),w=canvas.width*scale,h=canvas.height*scale;
     p.drawImage(canvas,(224-w)/2,(224-h)/2,w,h);return c;
   }
-  function loadScript(src){return new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src;s.async=true;const timer=setTimeout(()=>{s.remove();reject(new Error('AI load timeout'));},16000);s.onload=()=>{clearTimeout(timer);resolve();};s.onerror=()=>{clearTimeout(timer);reject(new Error('AI script unavailable'));};document.head.appendChild(s);});}
-  async function getRecognition(){
+  function nameThemes(name){
+    const value=name.normalize('NFKC').toLowerCase();
+    return {element:NAME_ELEMENTS.find(x=>x.pattern.test(value))?.id||null,creature:AI_CREATURES.find(x=>x.pattern.test(value))||null};
+  }
+  async function getRecognition(onProgress){
     if(!modelPromise)modelPromise=(async()=>{
-      await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js');
-      await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js');
-      return await window.mobilenet.load({version:2,alpha:1});
-    })();
+      const {pipeline,env}=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1');
+      env.allowLocalModels=false;
+      return pipeline('zero-shot-image-classification','Xenova/clip-vit-base-patch32',{
+        device:'wasm',dtype:'q8',progress_callback:e=>{
+          if(e.status==='progress'&&e.progress!=null)onProgress?.(Math.round(e.progress));
+        }
+      });
+    })().catch(e=>{modelPromise=null;throw e;});
     return modelPromise;
   }
-  function recognitionName(label){
-    const s=(label||'').toLowerCase();
-    for(const [key,jp] of [['cat','ネコ'],['dog','イヌ'],['wolf','オオカミ'],['fox','キツネ'],['bird','トリ'],['eagle','ワシ'],['owl','フクロウ'],['fish','サカナ'],['shark','サメ'],['snake','ヘビ'],['dragon','ドラゴン'],['frog','カエル'],['turtle','カメ'],['bear','クマ'],['butterfly','チョウ'],['spider','クモ'],['rabbit','ウサギ'],['horse','ウマ'],['lion','ライオン'],['tiger','トラ'],['robot','ロボ'],['star','スター'],['flower','フラワー']])if(s.includes(key))return jp;
-    return '';
+  async function compareNameAndImage(name,image,onProgress){
+    const classifier=await getRecognition(onProgress);
+    const prompts=[...AI_ELEMENTS.map(x=>x.prompt),...AI_CREATURES.map(x=>x.prompt)];
+    const result=await classifier(image,prompts);
+    const byPrompt=new Map(result.map(x=>[x.label,Number(x.score)||0]));
+    const elementScores=AI_ELEMENTS.map(x=>({...x,score:byPrompt.get(x.prompt)||0})).sort((a,b)=>b.score-a.score);
+    const creatureScores=AI_CREATURES.map(x=>({...x,score:byPrompt.get(x.prompt)||0})).sort((a,b)=>b.score-a.score);
+    const hints=nameThemes(name),matches=[];
+    if(hints.element)matches.push((elementScores.find(x=>x.id===hints.element)?.score||0)/Math.max(elementScores[0].score,1e-8));
+    if(hints.creature)matches.push((creatureScores.find(x=>x.id===hints.creature.id)?.score||0)/Math.max(creatureScores[0].score,1e-8));
+    const alignment=matches.length?matches.reduce((a,b)=>a+b,0)/matches.length:null;
+    return {hints,elementScores,creatureScores,alignment,visualElement:elementScores[0].id,visualCreature:creatureScores[0].name};
   }
   function cardImage(){const c=document.createElement('canvas');c.width=240;c.height=168;const p=c.getContext('2d');p.fillStyle='#fdfbff';p.fillRect(0,0,c.width,c.height);p.drawImage(canvas,0,0,c.width,c.height);return c.toDataURL('image/webp',.79);}
-  function generatedMoves(element,features){
+  function generatedMoves(element,features,creature){
     const variants={
       fire:[['火炎の爪','フレイムブレイク'],['紅蓮の牙','メテオフレア']],
       water:[['水流の刃','タイダルウェーブ'],['アクアショット','深海の渦']],
@@ -143,7 +192,8 @@
       light:[['光の矢','ホーリーバースト'],['星のきらめき','スターダスト']]
     };
     const pair=variants[element][(features.hash>>>8)%2];
-    return [{name:pair[0],power:1,kind:'attack',desc:'通常攻撃'},
+    const special=creature?.id==='dragon'?'ドラゴンブレス':creature?.id==='robot'?'メカビーム':creature?.id==='cat'?'ネコパンチ':creature?.id==='wolf'?'オオカミの牙':null;
+    return [{name:special||pair[0],power:1,kind:'attack',desc:'通常攻撃'},
       {name:pair[1],power:1.48,kind:'special',desc:'高威力・2ターンの待機時間'},
       {name:features.symmetry>.55?'ミラーバリア':'生命の祈り',power:0,kind:'guard',desc:'防御とHP回復'}];
   }
@@ -151,16 +201,21 @@
     const chosenName=$('monster-name').value.trim();
     if(!chosenName){toast('カード化する前に名前を決めてね！');$('monster-name').focus();return;}
     const f=analyzePixels();if(!f){toast('もう少し絵を描いてから評価しよう！');return;}
-    const button=$('analyze-btn');button.disabled=true;button.innerHTML='✧ AIが絵を調べています…';
-    let label='',confidence=0,aiUsed=false;
+    const button=$('analyze-btn');button.disabled=true;button.textContent='✧ AIが名前と絵を調べています…';
+    let judgment=null;
     try{
-      const m=await getRecognition();const predictions=await m.classify(drawAnalysisCanvas(),3);
-      if(predictions.length){label=predictions[0].className;confidence=predictions[0].probability;aiUsed=true;}
-    }catch(e){console.warn('AIモデルは利用不可。色と形によるローカル分析に切り替えます。',e);}
+      judgment=await compareNameAndImage(chosenName,drawAnalysisCanvas().toDataURL('image/png'),percent=>{button.textContent=`✧ AIモデルを準備中… ${percent}%`;});
+    }catch(e){console.warn('画像・テキスト照合AIを利用できません。代替評価に切り替えます。',e);}
     const rand=n=>((f.hash>>>((n%4)*8))&255)/255;
-    const visualScore=clamp(Math.round(38+Math.min(25,f.coverage*160)+Math.min(12,f.variation*.28)+f.symmetry*9+Math.min(8,strokes*.7)+Math.min(6,f.edges/1700)+(aiUsed?confidence*5:0)),38,98);
+    const hints=judgment?.hints||nameThemes(chosenName);
+    const dominant=judgment?.elementScores[0];
+    const nameElement=hints.element;
+    const element=judgment?AI_ELEMENTS.map(x=>({id:x.id,score:(judgment.elementScores.find(y=>y.id===x.id)?.score||0)/Math.max(dominant.score,1e-8)*.65+(x.id===f.element?0.20:0)+(x.id===nameElement?0.15:0)})).sort((a,b)=>b.score-a.score)[0].id:nameElement||f.element;
+    const shapeScore=38+Math.min(25,f.coverage*160)+Math.min(12,f.variation*.28)+f.symmetry*9+Math.min(8,strokes*.7)+Math.min(6,f.edges/1700);
+    const matchBonus=judgment?.alignment!=null?(judgment.alignment-.55)*22:0;
+    const visualScore=clamp(Math.round(shapeScore+matchBonus+(judgment?3:0)),38,98);
     const rarity=visualScore>=91?'legend':visualScore>=77?'epic':visualScore>=61?'rare':'common';
-    draft={id:null,name:chosenName.slice(0,24),element:f.element,score:visualScore,rarity,hp:Math.round(94+visualScore*.86+rand(1)*20),atk:Math.round(27+visualScore*.65+rand(2)*14),def:Math.round(22+visualScore*.57+rand(3)*14),moves:generatedMoves(f.element,f),image:cardImage(),createdAt:Date.now(),aiUsed,label,confidence,published:false};
+    draft={id:null,name:chosenName.slice(0,24),element,score:visualScore,rarity,hp:Math.round(94+visualScore*.86+rand(1)*20),atk:Math.round(27+visualScore*.65+rand(2)*14),def:Math.round(22+visualScore*.57+rand(3)*14),moves:generatedMoves(element,f,hints.creature),image:cardImage(),createdAt:Date.now(),aiUsed:!!judgment,aiEngine:judgment?'CLIP':'fallback',visualCreature:judgment?.visualCreature||'',visualElement:judgment?.visualElement||'',nameElement:nameElement||'',nameCreature:hints.creature?.name||'',nameMatch:judgment?.alignment==null?null:Math.round(judgment.alignment*100),published:false};
     renderPreview();button.disabled=false;button.innerHTML='<span>✦</span> AIで評価してカード化 <span class="button-arrow">↗</span>';toast('カードが完成したよ！');
     if(window.innerWidth<760)$('preview-result').scrollIntoView({behavior:'smooth',block:'start'});
   }
@@ -171,8 +226,9 @@
   }
   function renderPreview(){
     $('preview-placeholder').classList.add('hidden');$('preview-result').classList.remove('hidden');
-    const status=draft.aiUsed?`画像認識AIの推測: <strong>${escapeHtml(draft.label.split(',')[0])}</strong>（信頼度 ${Math.round(draft.confidence*100)}%）`:'画像認識AIに接続できなかったため、色・形・密度・対称性で評価しました。';
-    $('preview-result').innerHTML=`<div class="generation-label"><span>✦ NEW CREATURE GENERATED</span><div class="preview-scoring">SCORE <strong>${draft.score}</strong>/100</div></div>${cardTemplate(draft,true)}<div class="generation-info"><b>🧠 評価レポート</b><p>${status}</p><p>${ELEMENTS[draft.element].icon} ${ELEMENTS[draft.element].name}属性・${RARITY[draft.rarity].name}判定。攻撃技も自動生成されました。</p></div><button id="save-card" class="primary-button save-button">📚 コレクションに保存する</button>`;
+    const nameDescription=[draft.nameElement?ELEMENTS[draft.nameElement].name+'属性':'',draft.nameCreature].filter(Boolean).join('・');
+    const status=draft.aiUsed?`絵のAI判定：<strong>${escapeHtml(draft.visualCreature)}</strong> ／ ${ELEMENTS[draft.visualElement].name}のイメージ。<br>名前「${escapeHtml(draft.name)}」から読み取ったテーマ：<strong>${escapeHtml(nameDescription||'オリジナル名')}</strong>。${draft.nameMatch==null?'名前に明確なテーマがないため、一致度の数値は付けていません。':`<br>名前と絵の一致度：<strong>${draft.nameMatch}/100</strong>（AIが比べた候補間の相対的な目安）`}`:'画像・文章を照合するAIが利用できなかったため、名前のキーワードと絵の色・形・密度・対称性から簡易評価しました。';
+    $('preview-result').innerHTML=`<div class="generation-label"><span>✦ NEW CREATURE GENERATED</span><div class="preview-scoring">SCORE <strong>${draft.score}</strong>/100</div></div>${cardTemplate(draft,true)}<div class="generation-info"><b>🧠 名前 × イラスト AI評価レポート</b><p>${status}</p><p>${ELEMENTS[draft.element].icon} ${ELEMENTS[draft.element].name}属性・${RARITY[draft.rarity].name}判定。名前や絵をもとに技も自動生成されました。</p></div><button id="save-card" class="primary-button save-button">📚 コレクションに保存する</button>`;
     $('save-card').addEventListener('click',saveDraft);
   }
   function saveDraft(){
